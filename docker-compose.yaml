@@ -6,16 +6,25 @@ services:
     restart: unless-stopped
 
     volumes:
-      - bitcoind_data: /home/bitcoin/.bitcoin
-      - ./scripts/init_test_wallet.sh:ro
+      - bitcoind_data:/home/bitcoin/.bitcoin
+      - ./scripts/init_test_wallet.sh:/scripts/init_test_wallet.sh:ro
 
     ports:
-      - "18443:18443"   # RPC
-      - "28332:28332"   # ZMQ tx
-      - "28333:28333"   # ZMQ block
-      - "18444:18444"   # P2P (optional LAN nodes)
+      - "18443:18443"
+      - "28332:28332"
+      - "28333:28333"
+      - "18444:18444"
 
     networks:
       regtest_net:
         ipv4_address: 172.28.0.2
-      
+
+volumes:
+  bitcoind_data:
+
+networks:
+  regtest_net:
+    driver: bridge
+    ipam:
+      config:
+        - subnet: 172.28.0.0/16
