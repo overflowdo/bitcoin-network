@@ -24,6 +24,8 @@ done
 
 echo "[regtest] wallet subsystem ready"
 
+sleep 5
+
 bash /scripts/init_test_wallet.sh
 
 wait

@@ -1,24 +1,43 @@
-FROM debian:bookworm-slim
+FROM ubuntu:16.04 as builder
 
-ENV BITCOIN_VERSION=26.0
+WORKDIR /root
 
-RUN apt-get update && apt-get install -y \
-    wget ca-certificates tini \
-    && rm -rf /var/lib/apt/lists/*
+# install bitcoind
 
-RUN useradd -m bitcoin
+ENV BITCOIN_REPO=https://github.com/bitcoin/bitcoin.git
+ENV BITCOIN_BRANCH=master
+ENV BITCOIN_TAG=v0.21
 
-RUN wget https://bitcoin.org/bin/bitcoin-core-${BITCOIN_VERSION}/bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz \
-    && tar -xzf bitcoin-${BITCOIN_VERSION}-x86_64-linux-gnu.tar.gz \
-    && install -m 0755 -o root -g root -t /usr/local/bin bitcoin-${BITCOIN_VERSION}/bin/* \
-    && rm -rf bitcoin-${BITCOIN_VERSION}*
+RUN apt-get update && \
+    apt-get install git build-essential libtool autotools-dev automake pkg-config \
+    bsdmainutils python3 -y && \
+    apt-get install libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev \
+    libboost-thread-dev libdb-dev libdb++-dev -y && \
+    apt-get install libsqlite3-dev && \
+    git clone $BITCOIN_REPO --branch $BITCOIN_BRANCH --single-branch
 
-COPY bitcoin.conf /home/bitcoin/.bitcoin/bitcoin.conf
-COPY entrypoint.sh /entrypoint.sh
+RUN (cd bitcoin && git fetch --all --tags --prune && git checkout tags/$BITCOIN_TAG && \
+      ./autogen.sh && \
+      ./configure --disable-tests \
+      --disable-bench --disable-static  \
+      --without-gui --disable-zmq \
+      --with-incompatible-bdb \
+      CFLAGS='-w' CXXFLAGS='-w' && \
+      make -j 4 && \
+      strip src/bitcoind && \
+      strip src/bitcoin-cli && \
+      strip src/bitcoin-tx )
 
-RUN chmod +x /entrypoint.sh && chown -R bitcoin:bitcoin /home/bitcoin
+RUN apt-get update && apt-get install -y libevent-dev libboost-system-dev libboost-filesystem-dev \
+    libboost-thread-dev libdb-dev libdb++-dev curl build-essential
 
-USER bitcoin
+COPY --from=builder /root/bitcoin/src/bitcoind /root
+COPY --from=builder /root/bitcoin/src/bitcoin-cli /root
+COPY --from=builder /root/bitcoin/src/bitcoin-tx /root
 
-ENTRYPOINT ["/usr/bin/tini", "--"]
-CMD ["/entrypoint.sh"]
+EXPOSE 18444 18443
+
+ADD entrypoint.sh /root/entrypoint.sh
+RUN chmod a+x /root/entrypoint.sh
+
+CMD ["/root/entrypoint.sh"]

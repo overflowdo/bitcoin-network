@@ -89,9 +89,6 @@ echo "Funding wallets..."
 $RPC -rpcwallet=test-wallet-1 sendtoaddress "$ADDR2" 25
 $RPC -rpcwallet=test-wallet-1 sendtoaddress "$ADDR3" 25
 
-$RPC generatetoaddress 1 "$ADDR1"
-$RPC generatetoaddress 50 "$ADDR1"
-
 
 touch /data/.initialized
 
