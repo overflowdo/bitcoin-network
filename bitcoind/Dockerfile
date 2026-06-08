@@ -37,7 +37,6 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     libboost-filesystem1.58.0 \
     libboost-thread1.58.0 \
     libevent-2.0-5 \
-    libevent-2.0-5 \
     libevent-pthreads-2.0-5 \
     libdb5.3++ \
     libsqlite3-0 \

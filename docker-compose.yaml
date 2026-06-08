@@ -6,15 +6,15 @@ services:
     container_name: bitcoind-regtest
     restart: unless-stopped
     volumes:
-      - bitcoind_data:/home/bitcoin/.bitcoin
-      - ./bitcoin.conf:/home/bitcoin/.bitcoin/bitcoin.conf:ro
+      - bitcoind_data:/root/.bitcoin
+      - .bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
     ports:
       - "18443:18443"
       - "28332:28332"
       - "28333:28333"
       - "18444:18444"
-    command: bitcoind -regtest -conf=/home/bitcoin/.bitcoin/bitcoin.conf
-    networks:
+    entrypoint: ["/root/entrypoint.sh"]
+    networks: 
       regtest_net:
         ipv4_address: 172.28.0.2
 
