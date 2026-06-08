@@ -6,7 +6,7 @@ WORKDIR /root
 
 ENV BITCOIN_REPO=https://github.com/bitcoin/bitcoin.git
 ENV BITCOIN_BRANCH=master
-ENV BITCOIN_TAG=v0.21
+ENV BITCOIN_TAG=v0.21.0
 
 RUN apt-get update && \
     apt-get install git build-essential libtool autotools-dev automake pkg-config \
@@ -31,6 +31,7 @@ RUN (cd bitcoin && git fetch --all --tags --prune && git checkout tags/$BITCOIN_
 RUN apt-get update && apt-get install -y libevent-dev libboost-system-dev libboost-filesystem-dev \
     libboost-thread-dev libdb-dev libdb++-dev curl build-essential
 
+FROM ubuntu:16.04
 COPY --from=builder /root/bitcoin/src/bitcoind /root
 COPY --from=builder /root/bitcoin/src/bitcoin-cli /root
 COPY --from=builder /root/bitcoin/src/bitcoin-tx /root
