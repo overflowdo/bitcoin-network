@@ -2,15 +2,27 @@
 set -e
 
 echo "[regtest] starting bitcoind..."
+CONF_FILE="/home/bitcoin/.bitcoin/bitcoin.conf"
+LOG_FILE="/home/bitcoin/.bitcoin/regtest/debug.log"
 
 # ÄNDERUNG: -daemon hinzugefügt, damit das Skript sofort weiterläuft
-/root/bitcoind -regtest -daemon -server -fallbackfee=0.0002 -rpcallowip=0.0.0.0/0 -rpcbind=0.0.0.0 -blockfilterindex=1 -peerblockfilters=1
+bitcoind -regtest -conf="$CONF_FILE" -daemon
 
-RPC="bitcoin-cli -regtest"
+
+RPC="bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass"
 
 echo "[regtest] waiting for node..."
 
-until $RPC getblockchaininfo >/dev/null 2>&1; do
+while true; do
+  if ! pidof bitcoind > /dev/null; then
+    echo "CRITICAL ERROR: bitcoind process died! Check config or network IPs."
+    exit 1
+  fi
+
+  $RPC getblockchaininfo >/dev/null 2>&1
+  if [ $? -eq 0 ]; then
+    break
+  fi
   sleep 1
 done
 
@@ -25,8 +37,6 @@ echo "[regtest] wallet subsystem ready"
 
 sleep 5
 
-bash /scripts/init_test_wallet.sh
 
-# ÄNDERUNG: Da bitcoind im Hintergrund läuft, würde der Container jetzt stoppen.
-# Wir hängen uns an die Logdatei an, um den Container aktiv zu halten und Logs zu sehen.
+echo "[regtest] tailing logs..."
 tail -f /root/.bitcoin/regtest/debug.log
