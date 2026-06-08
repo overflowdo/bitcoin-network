@@ -32,6 +32,14 @@ RUN apt-get update && apt-get install -y libevent-dev libboost-system-dev libboo
     libboost-thread-dev libdb-dev libdb++-dev curl build-essential
 
 FROM ubuntu:16.04
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libboost-system1.58.0 \
+    libboost-filesystem1.58.0 \
+    libboost-thread1.58.0 \
+    libevent-2.0-5 \
+    libdb5.3++ \
+    && rm -rf /var/lib/apt/lists/*
+    
 COPY --from=builder /root/bitcoin/src/bitcoind /root
 COPY --from=builder /root/bitcoin/src/bitcoin-cli /root
 COPY --from=builder /root/bitcoin/src/bitcoin-tx /root
