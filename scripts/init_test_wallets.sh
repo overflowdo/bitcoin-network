@@ -67,6 +67,9 @@ if [ -z "$ADDR1" ] || [ "$ADDR1" == "null" ]; then
   exit 1
 fi
 
+
+
+
 # In das persistente Docker-Verzeichnis schreiben
 echo "$ADDR1" > "$ADDRESS_DIR/test-wallet-1.addr"
 echo "$ADDR2" > "$ADDRESS_DIR/test-wallet-2.addr"
