@@ -1,4 +1,3 @@
-version: '3.8'
 
 services:
   bitcoind:
@@ -7,7 +6,7 @@ services:
     restart: unless-stopped
     volumes:
       - bitcoind_data:/root/.bitcoin
-      - .bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
+      - ./bitcoind/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
     ports:
       - "18443:18443"
       - "28332:28332"
@@ -18,28 +17,6 @@ services:
       regtest_net:
         ipv4_address: 172.28.0.2
 
-  # Hilfs-Container für wallet initialisirung
-  bitcoind-init:
-    build: ./bitcoind
-    container_name: bitcoind-regtest-wallets
-    volumes:
-      - bitcoind_data:/home/bitcoin/.bitcoin
-      - ./scripts/init_test_wallet.sh:/scripts/init_test_wallet.sh:ro
-    networks:
-      regtest_net:
-    depends_on:
-      - bitcoind
-    # Warteschleife
-    entrypoint: >
-      /bin/bash -c "
-      echo '[init] Waiting for RPC server...';
-      until bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass -rpcconnect=172.28.0.2 getblockchaininfo >/dev/null 2>&1; do
-        sleep 1;
-      done;
-      echo '[init] Node is ready. Running wallet initialization...';
-      bash /scripts/init_test_wallet.sh;
-      echo '[init] Wallet initialization completed.';
-      "
 
 volumes:
   bitcoind_data:

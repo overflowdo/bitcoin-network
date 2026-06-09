@@ -6,8 +6,9 @@ echo "[regtest] starting bitcoind..."
 CONF_FILE="/root/.bitcoin/bitcoin.conf"
 LOG_FILE="/root/.bitcoin/regtest/debug.log"
 
+
 # bitcoind mit absolutem Pfad starten
-/root/bitcoind -regtest -conf="$CONF_FILE" -daemon
+/root/bitcoind -regtest -rpcuser=user -rpcpassword=pass -rpcbind=172.28.0.2 -rpcallowip=0.0.0.0/0 -conf="$CONF_FILE" -daemon
 
 # KORREKTUR: Absoluter Pfad zu /root/bitcoin-cli zwingend erforderlich!
 RPC="/root/bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass"
@@ -34,12 +35,15 @@ set -e # set -e wieder aktivieren
 
 echo "[regtest] node ready"
 
+$RPC createwallet "default"
 # Wallet readiness prüfen
 set +e
 until $RPC getwalletinfo >/dev/null 2>&1; do
   sleep 1
 done
 set -e
+
+bash /root/bitcoin/.scrip/init_test_wallets.sh
 
 echo "[regtest] wallet subsystem ready"
 sleep 5
