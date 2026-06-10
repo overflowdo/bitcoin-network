@@ -1,54 +1,61 @@
-FROM ubuntu:16.04 as builder
+FROM ubuntu:24.04 as builder
 
 WORKDIR /root
 
-# install bitcoind
-
 ENV BITCOIN_REPO=https://github.com/bitcoin/bitcoin.git
-ENV BITCOIN_BRANCH=master
-ENV BITCOIN_TAG=v0.21.0
+ENV BITCOIN_TAG=v31.0
 
-RUN apt-get update && \
-    apt-get install git build-essential libtool autotools-dev automake pkg-config \
-    bsdmainutils python3 -y && \
-    apt-get install libevent-dev libboost-system-dev libboost-filesystem-dev libboost-test-dev \
-    libboost-thread-dev libdb-dev libdb++-dev -y && \
-    apt-get install libsqlite3-dev && \
-    git clone $BITCOIN_REPO --branch $BITCOIN_BRANCH --single-branch
-
-RUN (cd bitcoin && git fetch --all --tags --prune && git checkout tags/$BITCOIN_TAG && \
-      ./autogen.sh && \
-      ./configure --disable-tests \
-      --disable-bench --disable-static  \
-      --without-gui --disable-zmq \
-      --with-incompatible-bdb \
-      CFLAGS='-w' CXXFLAGS='-w' && \
-      make -j 4 && \
-      strip src/bitcoind && \
-      strip src/bitcoin-cli && \
-      strip src/bitcoin-tx )
-
-RUN apt-get update && apt-get install -y libevent-dev libboost-system-dev libboost-filesystem-dev \
-    libboost-thread-dev libdb-dev libdb++-dev curl build-essential
-
-FROM ubuntu:16.04
-RUN apt-get update && apt-get install -y --no-install-recommends \
-    libboost-system1.58.0 \
-    libboost-filesystem1.58.0 \
-    libboost-thread1.58.0 \
-    libevent-2.0-5 \
-    libevent-pthreads-2.0-5 \
-    libdb5.3++ \
-    libsqlite3-0 \
+RUN apt-get update && apt-get install -y \
+    git \
+    build-essential \
+    cmake \
+    ninja-build \
+    pkg-config \
+    python3 \
+    libevent-dev \
+    libboost-dev \
+    libsqlite3-dev \
+    libzmq3-dev \
     && rm -rf /var/lib/apt/lists/*
 
-COPY --from=builder /root/bitcoin/src/bitcoind /root
-COPY --from=builder /root/bitcoin/src/bitcoin-cli /root
-COPY --from=builder /root/bitcoin/src/bitcoin-tx /root
+RUN git clone $BITCOIN_REPO bitcoin
+
+RUN cd bitcoin && \
+    git fetch --all --tags --prune && \
+    git checkout tags/$BITCOIN_TAG && \
+    cmake -B build \
+        -DBUILD_TESTS=OFF \
+        -DBUILD_BENCH=OFF \
+        -DWITH_GUI=OFF \
+        -DWITH_ZMQ=OFF \
+        -DENABLE_IPC=OFF \
+        -DBUILD_BITCOIN_WALLET=ON && \
+    cmake --build build -j$(nproc)
+
+RUN strip /root/bitcoin/build/bin/bitcoind && \
+    strip /root/bitcoin/build/bin/bitcoin-cli
+
+
+FROM ubuntu:24.04
+
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    libevent-2.1-7 \
+    libevent-pthreads-2.1-7 \
+    libevent-extra-2.1-7 \
+    libboost-system1.83.0 \
+    libboost-filesystem1.83.0 \
+    libboost-thread1.83.0 \
+    libsqlite3-0 \
+    jq \
+    && rm -rf /var/lib/apt/lists/*
+
+COPY --from=builder /root/bitcoin/build/bin/bitcoind /root/
+COPY --from=builder /root/bitcoin/build/bin/bitcoin-cli /root/
+
 
 EXPOSE 18444 18443
 
 ADD entrypoint.sh /root/entrypoint.sh
-RUN chmod a+x /root/entrypoint.sh
+RUN chmod +x /root/entrypoint.sh
 
 CMD ["/root/entrypoint.sh"]

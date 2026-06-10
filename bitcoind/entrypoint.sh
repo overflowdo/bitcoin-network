@@ -8,15 +8,15 @@ LOG_FILE="/root/.bitcoin/regtest/debug.log"
 
 
 # bitcoind mit absolutem Pfad starten
-/root/bitcoind -regtest -rpcuser=user -rpcpassword=pass -rpcbind=172.28.0.2 -rpcallowip=0.0.0.0/0 -conf="$CONF_FILE" -daemon
+/root/bitcoind -regtest -conf="$CONF_FILE" -daemon
 
 # KORREKTUR: Absoluter Pfad zu /root/bitcoin-cli zwingend erforderlich!
 RPC="/root/bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass"
 
 echo "[regtest] waiting for node..."
 
-# Temporär set -e deaktivieren, damit der Schleifen-Check nicht hart abbricht
-set +e
+
+
 while true; do
   # KORREKTUR: native Prüfung via "ps", da "pidof" im Image fehlt
   if ! ps aux | grep '[b]itcoind' > /dev/null; then
@@ -31,19 +31,28 @@ while true; do
   fi
   sleep 1
 done
-set -e # set -e wieder aktivieren
+
 
 echo "[regtest] node ready"
 
-$RPC createwallet "default"
+
+#Wallet bauen
+if ! $RPC listwallets | grep -q "default"; then
+  $RPC createwallet "default"
+else
+  echo "[wallet] already exists → loading"
+  $RPC loadwallet "default" >/dev/null 2>&1 || true
+fi
+
+
 # Wallet readiness prüfen
-set +e
+
 until $RPC getwalletinfo >/dev/null 2>&1; do
   sleep 1
 done
-set -e
 
-bash /root/bitcoin/.scrip/init_test_wallets.sh
+
+bash /root/bitcoin/.script/init_test_wallets.sh
 
 echo "[regtest] wallet subsystem ready"
 sleep 5

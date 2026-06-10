@@ -7,6 +7,8 @@ services:
     volumes:
       - bitcoind_data:/root/.bitcoin
       - ./bitcoind/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
+      - ./scripts/init_test_wallets.sh:/root/.bitcoin/scripts/init_test_wallets.sh:ro
+      - ./wallets:/root/.bitcoin/wallets
     ports:
       - "18443:18443"
       - "28332:28332"
