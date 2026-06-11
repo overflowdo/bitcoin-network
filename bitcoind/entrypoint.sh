@@ -1,29 +1,27 @@
 #!/bin/bash
 set -e
-
+ 
 echo "[regtest] starting bitcoind..."
-# KORREKTUR: Pfade laut Ihrem Dockerfile angepasst (/root/.bitcoin/)
+
 CONF_FILE="/root/.bitcoin/bitcoin.conf"
 LOG_FILE="/root/.bitcoin/regtest/debug.log"
+WALLET_FILE="/root/.bitcoin/scripts/load_wallets.sh"
+ 
 
-
-# bitcoind mit absolutem Pfad starten
 /root/bitcoind -regtest -conf="$CONF_FILE" -daemon
+ 
 
-# KORREKTUR: Absoluter Pfad zu /root/bitcoin-cli zwingend erforderlich!
 RPC="/root/bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass"
-
+ 
 echo "[regtest] waiting for node..."
-
-
+ 
 
 while true; do
-  # KORREKTUR: native Prüfung via "ps", da "pidof" im Image fehlt
   if ! ps aux | grep '[b]itcoind' > /dev/null; then
     echo "CRITICAL ERROR: bitcoind process died! Check config or network IPs."
     exit 1
   fi
-
+ 
   # RPC-Abfrage testen
   $RPC getblockchaininfo >/dev/null 2>&1
   if [ $? -eq 0 ]; then
@@ -31,32 +29,30 @@ while true; do
   fi
   sleep 1
 done
-
-
+ 
 echo "[regtest] node ready"
-
-
-#Wallet bauen
-if ! $RPC listwallets | grep -q "default"; then
-  $RPC createwallet "default"
-else
-  echo "[wallet] already exists → loading"
-  $RPC loadwallet "default" >/dev/null 2>&1 || true
-fi
-
-
+ 
+$RPC createwallet "default"
 # Wallet readiness prüfen
-
+set +e
 until $RPC getwalletinfo >/dev/null 2>&1; do
   sleep 1
 done
+set -e
 
-
-bash /root/bitcoin/.script/init_test_wallets.sh
-
+#Zuvor erstellten Wallets imporieren
+if [ -f "$WALLET_FILE" ]; then
+  bash "$WALLET_FILE"
+fi
+#Wenn erster containerstart wird diese Ausfuehrung unterbrochen.
+#Dann kann wallet_init_oneTime.sh ausgeführt werden zum erstellen der wallet deskriptoren
+#Diese werden konsistiert und bei neustart gemountet
+#Sind dementsprechend bei erneuten Start verfügbar
+#Sicherstellen selbe xpub und xprv bei jedem start
+ 
 echo "[regtest] wallet subsystem ready"
 sleep 5
-
+ 
 echo "[regtest] tailing logs..."
-# KORREKTUR: Pfad auf die Variable angepasst
+
 tail -f "$LOG_FILE"

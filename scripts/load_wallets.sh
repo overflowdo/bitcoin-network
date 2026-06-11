@@ -1,6 +1,9 @@
 #!/bin/bash
+# Einmaliges Aufsetzen dieser Nodes.
+#Danach importieren der descitpoiren aus dem filesystem /wallets/, um über mehrere versuche dieselben Adressen zu haben.
+#Wichtig für OPA whitelisting
 set -e
- 
+
 RPC="/root/bitcoin-cli -regtest -rpcuser=user -rpcpassword=pass"
  
 until $RPC getblockchaininfo >/dev/null 2>&1; do
@@ -14,7 +17,7 @@ restore_wallet() {
  
   echo "Restoring $WALLET..."
  
-  # Wallet neu erstellen (descriptor wallet!)
+  # descriptor Wallet neu erstellen
   $RPC createwallet "$WALLET" false false "" false true >/dev/null 2>&1 || true
  
   # Descriptors extrahieren und importieren

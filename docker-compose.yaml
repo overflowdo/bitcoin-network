@@ -7,7 +7,7 @@ services:
     volumes:
       - bitcoind_data:/root/.bitcoin
       - ./bitcoind/bitcoin.conf:/root/.bitcoin/bitcoin.conf:ro
-      - ./scripts/init_test_wallets.sh:/root/.bitcoin/scripts/init_test_wallets.sh:ro
+      - ./scripts:/root/.bitcoin/scripts:ro
       - ./wallets:/root/.bitcoin/wallets
     ports:
       - "18443:18443"
@@ -15,17 +15,6 @@ services:
       - "28333:28333"
       - "18444:18444"
     entrypoint: ["/root/entrypoint.sh"]
-    networks: 
-      regtest_net:
-        ipv4_address: 172.28.0.2
-
 
 volumes:
   bitcoind_data:
-
-networks:
-  regtest_net:
-    driver: bridge
-    ipam:
-      config:
-        - subnet: 172.28.0.0/16
